@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naphtha Density Correction Calculator</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛢️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --alabaster:#E9E0CF; --gold:#BA9B5F; --sage:#5E775E; --forest:#132B23;
+  --paper:#F4EFE4; --ink:#132B23; --muted:#5b6a5f; --line:#d6caae;
+  --head:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --body:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--body);color:var(--alabaster);background:#0e211a;min-height:100vh;line-height:1.5}
+.bg{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,#132B23 0%,#0e211a 70%,#0a1813 100%)}
+.bg svg{position:absolute;inset:0;width:100%;height:100%}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+header{display:flex;align-items:center;gap:16px;margin-bottom:28px}
+.mark{width:52px;height:52px;border-radius:14px;background:var(--gold);display:grid;place-items:center;flex:none}
+h1{font:800 clamp(1.7rem,4.4vw,2.9rem)/1.05 var(--head);margin:0;letter-spacing:-.02em}
+.sub{margin:6px 0 0;color:#cbc1a8;max-width:62ch}
+.grid{display:grid;gap:22px;grid-template-columns:1fr}
+@media(min-width:920px){.grid{grid-template-columns:1.05fr .95fr}}
+.card{background:var(--paper);color:var(--ink);border-radius:20px;padding:26px;box-shadow:0 18px 50px rgba(0,0,0,.35);border:1px solid rgba(186,155,95,.5)}
+.card h2{font:700 1.3rem var(--head);margin:0 0 4px}
+.card .hint{margin:0 0 18px;color:var(--muted);font-size:.9rem}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--alabaster);padding:5px;border-radius:12px;margin-bottom:16px}
+.seg input{position:absolute;opacity:0}
+.seg label{text-align:center;padding:10px 6px;border-radius:9px;cursor:pointer;font-weight:600;font-size:.95rem;transition:background .15s,color .15s}
+.seg input:checked+label{background:var(--forest);color:var(--alabaster)}
+.seg input:focus-visible+label{outline:3px solid var(--gold);outline-offset:2px}
+.row{display:grid;gap:14px;grid-template-columns:1fr 1fr}
+@media(max-width:520px){.row{grid-template-columns:1fr}}
+.f{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.f span{font-size:.82rem;font-weight:600;color:var(--sage)}
+input[type=number],input[type=text]{font:500 1rem var(--body);padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);width:100%}
+input:focus{outline:3px solid rgba(186,155,95,.55);border-color:var(--gold)}
+.btn{font:700 1rem var(--head);border:0;border-radius:12px;padding:13px 20px;cursor:pointer;transition:transform .12s,background .15s}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.primary{background:var(--forest);color:var(--alabaster);width:100%}
+.primary:hover{background:#1c3d32}
+.gold{background:var(--gold);color:var(--forest)}
+.gold:hover{background:#c9ab70}
+.gold:disabled{opacity:.45;cursor:not-allowed}
+.ghost{background:transparent;color:var(--forest);border:1.5px solid var(--line);padding:9px 14px;font-size:.9rem}
+.ghost:hover{border-color:var(--sage)}
+.msg{min-height:1.3em;color:#9b3b2b;font-size:.88rem;margin:10px 0 0}
+.result{background:var(--forest);color:var(--alabaster);border-color:var(--gold)}
+.result .hint{color:#b9b29c}
+.big{font:800 clamp(2.6rem,7vw,3.8rem)/1 var(--head);color:var(--gold);letter-spacing:-.02em}
+.big small{font:600 1rem var(--body);color:var(--alabaster);margin-left:6px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.stat{background:rgba(233,224,207,.08);border-left:3px solid var(--sage);border-radius:8px;padding:10px 12px}
+.stat b{display:block;font:700 1.1rem var(--head)}
+.stat span{font-size:.78rem;color:#b9b29c}
+.empty{color:#b9b29c;padding:26px 0}
+.hist{margin-top:22px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.bar .l{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tw{overflow-x:auto;border-radius:14px;border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;min-width:860px;font-size:.88rem}
+th{background:var(--forest);color:var(--alabaster);text-align:left;padding:11px 12px;font-weight:600;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody tr:nth-child(even){background:var(--alabaster)}
+tbody tr:nth-child(odd){background:#faf7f0}
+td.n{font-variant-numeric:tabular-nums}
+td.key{font-weight:700;color:var(--sage)}
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.76rem;font-weight:600}
+.tag.L{background:var(--sage);color:#fff}.tag.H{background:var(--gold);color:var(--forest)}
+.x{background:none;border:0;color:#9b3b2b;cursor:pointer;font-size:1.05rem}
+.note{color:#b9b29c;font-size:.82rem;margin-top:26px;max-width:90ch}
+@media(prefers-reduced-motion:no-preference){.flame{animation:fl 2.6s ease-in-out infinite;transform-origin:50% 100%;transform-box:fill-box}@keyframes fl{50%{transform:scaleY(1.12) scaleX(.94)}}}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true">
+<svg viewBox="0 0 1440 800" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <pattern id="g" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0H0V60" fill="none" stroke="#5E775E" stroke-opacity=".12"/></pattern>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#BA9B5F" stop-opacity=".35"/><stop offset="1" stop-color="#BA9B5F" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1440" height="800" fill="url(#g)"/>
+  <circle cx="1105" cy="340" r="260" fill="url(#glow)"/>
+  <g fill="#5E775E" fill-opacity=".28" stroke="#5E775E" stroke-opacity=".5">
+    <rect x="170" y="400" width="64" height="400" rx="32"/>
+    <rect x="262" y="470" width="46" height="330" rx="23"/>
+    <rect x="336" y="520" width="78" height="280" rx="39"/>
+    <rect x="470" y="660" width="130" height="140"/><ellipse cx="535" cy="660" rx="65" ry="16"/>
+    <rect x="630" y="690" width="110" height="110"/><ellipse cx="685" cy="690" rx="55" ry="13"/>
+    <rect x="860" y="470" width="34" height="330"/>
+    <rect x="1000" y="540" width="70" height="260" rx="35"/>
+    <rect x="1240" y="580" width="90" height="220"/><ellipse cx="1285" cy="580" rx="45" ry="12"/>
+  </g>
+  <g stroke="#BA9B5F" stroke-opacity=".4" stroke-width="2" fill="none">
+    <path d="M150 730H1380M150 750H1380"/>
+    <path d="M202 520H170M202 580H170M202 640H170M285 560h-23M285 640h-23M375 600h-39M375 680h-39"/>
+  </g>
+  <g>
+    <rect x="1101" y="360" width="8" height="440" fill="#5E775E" fill-opacity=".55"/>
+    <path class="flame" d="M1105 362c-18-26-8-44 0-62 8 18 18 36 0 62z" fill="#BA9B5F" fill-opacity=".85"/>
+  </g>
+</svg>
+</div>
+
+<div class="wrap">
+<header>
+  <div class="mark" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="#132B23"><path d="M12 2C9 7 5 10.5 5 15a7 7 0 0014 0c0-4.5-4-8-7-13z"/></svg></div>
+  <div>
+    <h1>Naphtha density correction</h1>
+    <p class="sub">Convert density measured at tank or truck temperature to the laboratory reference of 15 °C or 20 °C. Works for light and heavy naphtha from any supplier.</p>
+  </div>
+</header>
+
+<div class="grid">
+  <section class="card" aria-labelledby="ct">
+    <h2 id="ct">Calculator</h2>
+    <p class="hint">Enter the observed density and the temperature it was read at.</p>
+    <form id="form" onsubmit="return false">
+      <div class="seg" role="radiogroup" aria-label="Naphtha grade">
+        <input type="radio" name="grade" id="gL" value="Light" checked><label for="gL">Light naphtha</label>
+        <input type="radio" name="grade" id="gH" value="Heavy"><label for="gH">Heavy naphtha</label>
+      </div>
+      <div class="row">
+        <label class="f"><span>Observed density (kg/m³)</span><input type="number" id="rho" step="0.1" inputmode="decimal" placeholder="e.g. 685.0"></label>
+        <label class="f"><span>Observed temperature (°C)</span><input type="number" id="temp" step="0.1" inputmode="decimal" placeholder="e.g. 32.5"></label>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="Laboratory reference temperature">
+        <input type="radio" name="lab" id="l15" value="15" checked><label for="l15">Lab temp 15 °C</label>
+        <input type="radio" name="lab" id="l20" value="20"><label for="l20">Lab temp 20 °C</label>
+      </div>
+      <div class="row">
+        <label class="f"><span>Supplier / purchase source</span><input type="text" id="src" placeholder="e.g. Supplier A, Terminal 3"></label>
+        <label class="f"><span>Tank / batch / truck no.</span><input type="text" id="ref" placeholder="e.g. TK-102"></label>
+      </div>
+      <label class="f"><span>Volume at observed temperature, litres (optional)</span><input type="number" id="vol" step="1" inputmode="decimal" placeholder="e.g. 30000"></label>
+      <button class="btn primary" id="calc" type="submit">Calculate and save to history</button>
+      <p class="msg" id="msg" role="alert"></p>
+    </form>
+  </section>
+
+  <section class="card result" aria-labelledby="rt" aria-live="polite">
+    <h2 id="rt">Corrected density</h2>
+    <p class="hint" id="rhint">Result appears here after you calculate.</p>
+    <div id="out"><div class="empty">No calculation yet.</div></div>
+  </section>
+</div>
+
+<section class="card hist" aria-labelledby="ht">
+  <div class="bar">
+    <div><h2 id="ht">History</h2><p class="hint" style="margin:0">Saved in this browser only. Tick the rows to include in the Word report.</p></div>
+    <div class="l">
+      <button class="btn ghost" id="selall">Select all</button>
+      <button class="btn ghost" id="clear">Clear history</button>
+      <button class="btn gold" id="gen">Generate Word report (.docx)</button>
+    </div>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th></th><th>Date</th><th>Grade</th><th>Source</th><th>Tank / batch</th><th>Observed</th><th>Lab temp</th><th>Density at lab temp</th><th>Change</th><th>VCF</th><th>Mass (kg)</th><th></th></tr></thead>
+    <tbody id="hb"></tbody>
+  </table></div>
+</section>
+
+<p class="note">Method: density at 15 °C is solved by iteration from the observed density using the thermal expansion coefficient for the gasoline range (K0 = 346.4228, K1 = 0.4388), the transition range and the jet range, as in API MPMS 11.1 / ASTM D1250. Density at 20 °C is then found from the 15 °C value. This is a simplified implementation without the intermediate rounding steps of the standard, so use the official tables for custody transfer or contract disputes.</p>
+</div>
+
+<script>
+const $=id=>document.getElementById(id), KEY='naphtha-density-history-v1';
+let hist=[]; try{hist=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){}
+const store=()=>{try{localStorage.setItem(KEY,JSON.stringify(hist))}catch(e){}};
+const f=(x,n)=>Number(x).toFixed(n);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* thermal expansion coefficient at 15 °C, per °C */
+function alpha(r){
+  if(r<770.5) return (346.4228+0.4388*r)/(r*r);
+  if(r<=787.5) return -0.00336312+2680.3206/(r*r);
+  if(r<838.5) return 594.5418/(r*r);
+  return (186.9696+0.4862*r)/(r*r);
+}
+const vcf=(r15,dt)=>{const a=alpha(r15);return Math.exp(-a*dt*(1+0.8*a*dt))};
+function correct(rho,T,lab){
+  let r=rho;
+  for(let i=0;i<50;i++){const n=rho/vcf(r,T-15); if(Math.abs(n-r)<1e-7){r=n;break} r=n}
+  const r15=r;
+  return {r15,rl:lab===15?r15:r15*vcf(r15,5)};
+}
+const radio=n=>document.querySelector(`input[name=${n}]:checked`).value;
+
+$('calc').addEventListener('click',()=>{
+  const rho=parseFloat($('rho').value), T=parseFloat($('temp').value), vol=parseFloat($('vol').value);
+  const msg=$('msg'); msg.textContent='';
+  if(!isFinite(rho)||!isFinite(T)){msg.textContent='Enter both the observed density and the observed temperature.';return}
+  if(rho<600||rho>860){msg.textContent='Density must be between 600 and 860 kg/m³ (naphtha range).';return}
+  if(T<-30||T>90){msg.textContent='Temperature must be between -30 and 90 °C.';return}
+  const grade=radio('grade'), lab=+radio('lab');
+  const {rl}=correct(rho,T,lab);
+  const e={id:Date.now(),ts:new Date().toISOString(),grade,src:$('src').value.trim(),ref:$('ref').value.trim(),
+    T,rho,lab,rl,d:rl-rho,vcf:rho/rl,sel:true};
+  if(isFinite(vol)&&vol>0){e.vol=vol;e.volStd=vol*rho/rl;e.mass=vol*rho/1000}
+  hist.unshift(e); store(); show(e); render();
+});
+
+function show(e){
+  const hintTxt=e.grade==='Light'?'Light naphtha is typically about 650–720 kg/m³.':'Heavy naphtha is typically about 720–800 kg/m³.';
+  $('rhint').textContent=`${e.grade} naphtha, read at ${f(e.T,1)} °C. ${hintTxt}`;
+  $('out').innerHTML=`<div class="big">${f(e.rl,1)}<small>kg/m³ at ${e.lab} °C</small></div>
+  <div class="pair">
+    <div class="stat"><b>${f(e.rl/1000,4)} g/mL</b><span>Density at ${e.lab} °C</span></div>
+    <div class="stat"><b>${e.d>=0?'+':''}${f(e.d,2)} kg/m³</b><span>Change from ${f(e.rho,1)} observed</span></div>
+    <div class="stat"><b>${f(e.vcf,5)}</b><span>Volume correction factor</span></div>
+    <div class="stat"><b>${e.mass?f(e.mass,0)+' kg':'n/a'}</b><span>${e.mass?'Mass of '+f(e.vol,0)+' L':'Add a volume to get mass'}</span></div>
+    ${e.volStd?`<div class="stat" style="grid-column:1/-1"><b>${f(e.volStd,0)} L</b><span>Volume at ${e.lab} °C</span></div>`:''}
+  </div>`;
+}
+
+function render(){
+  const b=$('hb');
+  if(!hist.length){b.innerHTML='<tr><td colspan="12" style="text-align:center;padding:26px;color:#5b6a5f">No calculations yet. Your results will be listed here.</td></tr>'}
+  else b.innerHTML=hist.map(e=>`<tr>
+    <td><input type="checkbox" data-s="${e.id}" ${e.sel?'checked':''} aria-label="Include in report"></td>
+    <td>${new Date(e.ts).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'})}</td>
+    <td><span class="tag ${e.grade[0]}">${e.grade}</span></td>
+    <td>${esc(e.src)||'-'}</td><td>${esc(e.ref)||'-'}</td>
+    <td class="n">${f(e.rho,1)} @ ${f(e.T,1)} °C</td><td class="n">${e.lab} °C</td>
+    <td class="n key">${f(e.rl,1)}</td><td class="n">${e.d>=0?'+':''}${f(e.d,2)}</td>
+    <td class="n">${f(e.vcf,5)}</td><td class="n">${e.mass?f(e.mass,0):'-'}</td>
+    <td><button class="x" data-d="${e.id}" aria-label="Delete row">✕</button></td></tr>`).join('');
+  $('gen').disabled=!hist.some(e=>e.sel);
+}
+$('hb').addEventListener('click',ev=>{
+  const d=ev.target.dataset.d, s=ev.target.dataset.s;
+  if(d){hist=hist.filter(e=>e.id!=d);store();render()}
+  if(s){const e=hist.find(x=>x.id==s);e.sel=ev.target.checked;store();render()}
+});
+$('selall').onclick=()=>{const all=hist.every(e=>e.sel);hist.forEach(e=>e.sel=!all);store();render()};
+$('clear').onclick=()=>{if(hist.length&&confirm('Delete all saved calculations?')){hist=[];store();render()}};
+
+/* ---------- Word report ---------- */
+const X=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const run=(t,o={})=>`<w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/>${o.b?'<w:b/>':''}<w:color w:val="${o.c||'132B23'}"/><w:sz w:val="${o.sz||18}"/></w:rPr><w:t xml:space="preserve">${X(t)}</w:t></w:r>`;
+const para=(runs,o={})=>`<w:p><w:pPr>${o.bdr?'<w:pBdr><w:bottom w:val="single" w:sz="10" w:space="3" w:color="BA9B5F"/></w:pBdr>':''}<w:spacing w:before="${o.b4||0}" w:after="${o.af??40}"/><w:jc w:val="${o.jc||'left'}"/></w:pPr>${runs}</w:p>`;
+const cell=(content,o)=>`<w:tc><w:tcPr><w:tcW w:w="${o.w}" w:type="dxa"/>${o.fill?`<w:shd w:val="clear" w:color="auto" w:fill="${o.fill}"/>`:''}<w:vAlign w:val="center"/></w:tcPr>${content}</w:tc>`;
+const row=(cells,o={})=>`<w:tr><w:trPr><w:cantSplit/>${o.h?`<w:trHeight w:val="${o.h}" w:hRule="atLeast"/>`:''}${o.hdr?'<w:tblHeader/>':''}</w:trPr>${cells}</w:tr>`;
+const tbl=(grid,rows,o={})=>`<w:tbl><w:tblPr><w:tblW w:w="${grid.reduce((a,b)=>a+b,0)}" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="12" w:space="0" w:color="BA9B5F"/><w:bottom w:val="single" w:sz="12" w:space="0" w:color="BA9B5F"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="D6CAAE"/></w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="${o.pad||70}" w:type="dxa"/><w:left w:w="${o.padx||90}" w:type="dxa"/><w:bottom w:w="${o.pad||70}" w:type="dxa"/><w:right w:w="${o.padx||90}" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${grid.map(w=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>${rows}</w:tbl>`;
+
+function buildDoc(items){
+  const now=new Date(), W=15398;
+  const dt=d=>new Date(d).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
+  const banner=tbl([W],
+    row(cell(para(run('Naphtha density correction report',{b:1,sz:52,c:'E9E0CF'}),{af:60})+para(run('Observed temperature to laboratory reference temperature (15 °C / 20 °C)',{sz:22,c:'BA9B5F'}),{af:100})+para(run(`Generated ${dt(now)}  |  ${items.length} calculation${items.length>1?'s':''}  |  Light and heavy naphtha`,{sz:18,c:'C9BFA8'}),{af:0}),{w:W,fill:'132B23'}),{h:1500})+
+    row(cell(para(run(' ',{sz:2}),{af:0}),{w:W,fill:'BA9B5F'}),{h:90}),{pad:200,padx:300});
+
+  const nL=items.filter(e=>e.grade==='Light').length, nH=items.length-nL;
+  const labs=[...new Set(items.map(e=>e.lab))].sort().map(x=>x+' °C').join(' and ');
+  const mass=items.reduce((a,e)=>a+(e.mass||0),0);
+  const sw=Math.floor(W/4), sg=[sw,sw,sw,W-3*sw];
+  const stat=(v,l,w,fill)=>cell(para(run(v,{b:1,sz:32,c:fill==='132B23'?'BA9B5F':'132B23'}),{af:0})+para(run(l,{sz:16,c:fill==='132B23'?'E9E0CF':'5E775E'}),{af:0}),{w,fill});
+  const summary=tbl(sg,row(
+    stat(String(items.length),'Records in this report',sg[0],'E9E0CF')+
+    stat(`${nL} light, ${nH} heavy`,'Grades',sg[1],'E9E0CF')+
+    stat(labs,'Laboratory reference',sg[2],'E9E0CF')+
+    stat(mass?f(mass,0)+' kg':'n/a','Total mass (where volume given)',sg[3],'132B23'),{h:900}),{pad:120,padx:160});
+
+  const H=['No.','Date','Grade','Source','Tank / batch','Obs. temp (°C)','Obs. density','Lab temp (°C)','Density at lab temp','Change','VCF','Volume obs. (L)','Volume at lab temp (L)','Mass (kg)'];
+  const g=[450,1450,900,1900,1250,800,1000,800,1150,850,1000,1000,1200,900];
+  g[3]+=W-g.reduce((a,b)=>a+b,0);
+  const align=i=>i>4?'right':'left';
+  const head=row(H.map((h,i)=>cell(para(run(h,{b:1,sz:15,c:'E9E0CF'}),{af:0,jc:align(i)}),{w:g[i],fill:'132B23'})).join(''),{hdr:1,h:520});
+  const body=items.map((e,k)=>{
+    const fill=k%2?'FFFFFF':'F4EFE4';
+    const v=[String(k+1),dt(e.ts),e.grade,e.src||'-',e.ref||'-',f(e.T,1),f(e.rho,1),String(e.lab),f(e.rl,1),(e.d>=0?'+':'')+f(e.d,2),f(e.vcf,5),e.vol?f(e.vol,0):'-',e.volStd?f(e.volStd,0):'-',e.mass?f(e.mass,0):'-'];
+    return row(v.map((t,i)=>cell(para(run(t,{sz:16,b:i===8,c:i===8?'5E775E':'132B23'}),{af:0,jc:align(i)}),{w:g[i],fill:i===8?'E9E0CF':fill})).join(''),{h:400});
+  }).join('');
+  const records=tbl(g,head+body,{pad:60,padx:80});
+
+  const h=t=>para(run(t,{b:1,sz:28}),{bdr:1,b4:360,af:120});
+  const li=t=>para(run(t,{sz:18}),{af:60});
+  const method=h('Calculation method')+
+    li('1.  The observed density is corrected to 15 °C by iteration: ρ15 = ρobs / VCF(ρ15, T − 15), repeated until the value no longer changes.')+
+    li('2.  VCF = exp[ −α ΔT (1 + 0.8 α ΔT) ], where α is the thermal expansion coefficient at 15 °C and ΔT is the temperature difference from 15 °C.')+
+    li('3.  α = (346.4228 + 0.4388 ρ15) / ρ15² for ρ15 below 770.5 kg/m³ (gasoline range, covers light naphtha and most heavy naphtha).')+
+    li('4.  α = −0.00336312 + 2680.3206 / ρ15² for 770.5 to 787.5 kg/m³ (transition range); α = 594.5418 / ρ15² for 787.5 to 838.5 kg/m³ (jet range).')+
+    li('5.  For a 20 °C laboratory reference: ρ20 = ρ15 × VCF(ρ15, +5).')+
+    li('6.  Volume correction factor in the table = ρobs / ρlab. Volume at lab temp = volume observed × VCF. Mass = volume observed × ρobs / 1000.')+
+    h('Notes')+
+    li('Densities are in kg/m³. No air buoyancy correction is applied to mass.')+
+    li('Coefficients follow API MPMS 11.1 / ASTM D1250 for generalized refined products. This tool does not apply the intermediate rounding of the printed standard, so differences of about 0.1 kg/m³ or less may appear. Use the official tables for custody transfer or contract disputes.')+
+    li('The calculations were saved in the browser and exported on '+dt(now)+'.');
+
+  const content=banner+para('',{af:200})+para(run('Summary',{b:1,sz:28}),{bdr:1,af:140})+summary+para('',{af:100})+para(run('Calculation records',{b:1,sz:28}),{bdr:1,b4:200,af:140})+records+method;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${content}<w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/><w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720" w:header="360" w:footer="360" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+}
+
+$('gen').addEventListener('click',async()=>{
+  const items=hist.filter(e=>e.sel).slice().reverse();
+  if(!items.length)return;
+  if(typeof JSZip==='undefined'){alert('The Word library could not load. Check your internet connection and try again.');return}
+  const z=new JSZip();
+  z.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>');
+  z.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+  z.file('word/_rels/document.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
+  z.file('word/styles.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/><w:sz w:val="20"/></w:rPr></w:rPrDefault></w:docDefaults></w:styles>');
+  z.file('word/document.xml',buildDoc(items));
+  const blob=await z.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='Naphtha_Density_Report_'+new Date().toISOString().slice(0,10)+'.docx';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+});
+
+render(); if(hist[0]) show(hist[0]);
+</script>
+</body>
+</html>
